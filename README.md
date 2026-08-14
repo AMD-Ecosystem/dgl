@@ -1,4 +1,1 @@
-# Deprecation warning
-> [!CAUTION]
-> The ROCm/dgl repository is retired, please use the [upstream](https://github.com/dmlc/dgl) repository
->
+This fork exists to provide a place for AMD engineers to prototype features and from which to send PRs upstream. It is not an officially supported AMD project and the default branch is not actively maintained or developed. Please see https://rocm.blogs.amd.com/artificial-intelligence/dgl-in-depth/README.html
