@@ -222,10 +222,8 @@ using cudaStream_t = hipStream_t;
 #define cusparseXcsrsort hipsparseXcsrsort
 #define cusparseXcsrsort_bufferSizeExt hipsparseXcsrsort_bufferSizeExt
 
-// Used in graphbolt
-#define CUDACachingAllocator HIPCachingAllocator
-#define getCurrentCUDAStream getCurrentHIPStream
-#define C10_CUDA_CHECK C10_HIP_CHECK
-#define C10_CUDA_KERNEL_LAUNCH_CHECK C10_HIP_KERNEL_LAUNCH_CHECK
+// Torch's hipified c10/ATen headers already declare the CUDA-named stream,
+// event, allocator and error-check APIs inside c10::cuda / at::cuda, so
+// redirecting them here would alias them onto HIP names that do not exist.
 
 #endif

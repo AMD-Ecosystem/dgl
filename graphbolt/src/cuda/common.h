@@ -33,10 +33,10 @@
 #include <dgl/hip/cuda_to_hip.h>
 #include <hip/hip_runtime.h>
 
-using namespace c10::hip;
-using GPUStream_t = at::hip::HIPStreamMasqueradingAsCUDA;
+using namespace c10::cuda;
+using GPUStream_t = c10::cuda::CUDAStream;
 #define THRUST_BACKEND thrust::hip
-#define GET_CURRENT_GPU_STREAM getCurrentHIPStreamMasqueradingAsCUDA
+#define GET_CURRENT_GPU_STREAM getCurrentCUDAStream
 
 #else // we're using CUDA
 

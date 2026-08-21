@@ -25,7 +25,6 @@
 
 #ifdef GRAPHBOLT_USE_HIP
 #include <hipcub/hipcub.hpp>
-#define C10_CUDA_KERNEL_LAUNCH_CHECK C10_HIP_KERNEL_LAUNCH_CHECK
 #else
 #include <cub/cub.cuh>
 #include <cuda/functional>

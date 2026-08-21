@@ -5,6 +5,7 @@ import backend as F
 import pytest
 import torch as th
 import torch.multiprocessing as mp
+from utils import rendezvous_port
 
 from dgl.nn import NodeEmbedding
 from dgl.optim import SparseAdagrad, SparseAdam
@@ -191,7 +192,7 @@ def start_sparse_adam_worker(
 ):
     print("start sparse worker for adam {}".format(rank))
     dist_init_method = "tcp://{master_ip}:{master_port}".format(
-        master_ip="127.0.0.1", master_port="12345"
+        master_ip="127.0.0.1", master_port=rendezvous_port()
     )
 
     if device.type == "cuda":
@@ -255,7 +256,7 @@ def start_torch_adam_worker(
 ):
     print("start sparse worker for adam {}".format(rank))
     dist_init_method = "tcp://{master_ip}:{master_port}".format(
-        master_ip="127.0.0.1", master_port="12345"
+        master_ip="127.0.0.1", master_port=rendezvous_port()
     )
     backend = "gloo"
 
@@ -601,7 +602,7 @@ def start_sparse_adam_state_dict_worker(
 ):
     print("start sparse worker for adam {}".format(rank))
     dist_init_method = "tcp://{master_ip}:{master_port}".format(
-        master_ip="127.0.0.1", master_port="12345"
+        master_ip="127.0.0.1", master_port=rendezvous_port()
     )
 
     device = th.device(f"cuda:{rank}")
