@@ -193,7 +193,7 @@ UniqueAndCompactBatchedHashMapBased(
             cuda::CUDAWorkspaceAllocator<cuco::pair<int64_t, int64_t>>{},
             ::cuda::stream_ref{stream},
         };
-        C10_CUDA_KERNEL_LAUNCH_CHECK();  // Check the map constructor's success.
+        GRAPHBOLT_C10_KERNEL_LAUNCH_CHECK();  // Check the map constructor's success.
         const dim3 block(BLOCK_SIZE);
         const dim3 grid(
             (offsets_ptr[2 * num_batches] + BLOCK_SIZE - 1) / BLOCK_SIZE);
