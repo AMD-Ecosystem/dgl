@@ -164,7 +164,10 @@ def read_edges(dataset_dir, edge_fmt, edge_path):
             os.path.join(dataset_dir, edge_path),
             names=["src", "dst"],
         )
-        src, dst = edge_data["src"].to_numpy(), edge_data["dst"].to_numpy()
+        src, dst = (
+            edge_data["src"].to_numpy(copy=True),
+            edge_data["dst"].to_numpy(copy=True),
+        )
     return (src, dst)
 
 
