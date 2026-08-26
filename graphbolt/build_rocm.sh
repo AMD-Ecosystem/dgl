@@ -27,11 +27,18 @@ if [ -n "$CMAKE_CXX_COMPILER" ]; then
   CMAKE_COMPILER_FLAGS="$CMAKE_COMPILER_FLAGS -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER"
 fi
 
-# Use CMAKE_PREFIX_PATH from parent if provided (helps find ROCm components)
+# Use CMAKE_PREFIX_PATH from parent if provided (helps find ROCm components).
+# CMake's add_custom_target converts semicolons to spaces; convert back for -D flag.
 CMAKE_PREFIX_FLAGS=""
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
-  CMAKE_PREFIX_FLAGS="-DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
+  CMAKE_PREFIX_SEMICOLON="${CMAKE_PREFIX_PATH// /;}"
+  CMAKE_PREFIX_FLAGS="-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_SEMICOLON}"
 fi
+
+# Unset CFLAGS/CXXFLAGS inherited from parent — they contain -Werror which
+# breaks CMake's FindOpenMP test compilation. Graphbolt sets its own flags via Torch.
+unset CFLAGS
+unset CXXFLAGS
 
 CMAKE_FLAGS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON                                \
 -DCMAKE_HIP_ARCHITECTURES=${CMAKE_HIP_ARCHITECTURES}                           \

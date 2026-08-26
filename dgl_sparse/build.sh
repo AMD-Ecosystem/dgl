@@ -21,11 +21,18 @@ if [ -n "$CMAKE_CXX_COMPILER" ]; then
   CMAKE_COMPILER_FLAGS="$CMAKE_COMPILER_FLAGS -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER"
 fi
 
-# Use CMAKE_PREFIX_PATH from parent if provided (helps find ROCm components)
+# Use CMAKE_PREFIX_PATH from parent if provided (helps find ROCm components).
+# CMake's add_custom_target converts semicolons to spaces; convert back for -D flag.
 CMAKE_PREFIX_FLAGS=""
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
-  CMAKE_PREFIX_FLAGS="-DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
+  CMAKE_PREFIX_SEMICOLON="${CMAKE_PREFIX_PATH// /;}"
+  CMAKE_PREFIX_FLAGS="-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_SEMICOLON}"
 fi
+
+# Unset CFLAGS/CXXFLAGS inherited from parent — they contain -Werror which
+# breaks CMake's FindOpenMP test compilation.
+unset CFLAGS
+unset CXXFLAGS
 
 if [ "$USE_CUDA" = 'ON' ]; then
   CMAKE_FLAGS="-DCUDA_TOOLKIT_ROOT_DIR=$CUDA_TOOLKIT_ROOT_DIR -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST -DUSE_CUDA=$USE_CUDA -DEXTERNAL_DMLC_LIB_PATH=$EXTERNAL_DMLC_LIB_PATH"
