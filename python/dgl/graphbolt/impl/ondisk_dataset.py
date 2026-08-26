@@ -136,8 +136,8 @@ def _graph_data_to_fused_csc_sampling_graph(
             src, dst = read_edges(dataset_dir, edge_fmt, edge_path)
             edge_type_offset.append(edge_type_offset[-1] + len(src))
             src_type, _, dst_type = etype_str_to_tuple(edge_info["type"])
-            src += node_type_offset[node_type_to_id[src_type]]
-            dst += node_type_offset[node_type_to_id[dst_type]]
+            src = src + node_type_offset[node_type_to_id[src_type]]
+            dst = dst + node_type_offset[node_type_to_id[dst_type]]
             coo_src_list.append(torch.tensor(src))
             coo_dst_list.append(torch.tensor(dst))
             coo_etype_list.append(torch.full((len(src),), etype_id))

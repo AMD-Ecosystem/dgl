@@ -13,7 +13,7 @@ ENV MAX_JOBS=${ARG_MAX_JOBS:-24}
 
 # Install basic tools
 RUN apt-get update \
-    && apt install -y clang-format-15 ninja-build tree 
+    && apt install -y clang-format-15 git ninja-build tree 
 
 #Updating to latest version of Cmake for Ubuntu 22.04
 RUN apt-get update && apt-get install -y wget build-essential \
