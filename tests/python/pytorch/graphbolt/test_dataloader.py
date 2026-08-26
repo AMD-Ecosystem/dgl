@@ -13,6 +13,7 @@ import pytest
 import torch
 import torch.distributed as thd
 from dgl.graphbolt.datapipes import find_dps, traverse_dps
+from utils import rendezvous_port
 
 from . import gb_test_utils
 
@@ -89,7 +90,7 @@ def test_gpu_sampling_DataLoader(
         init_method = (
             f"file:///{os.path.join(os.getcwd(), 'dis_tempfile')}"
             if platform == "win32"
-            else "tcp://127.0.0.1:12345"
+            else f"tcp://127.0.0.1:{rendezvous_port()}"
         )
         thd.init_process_group(
             init_method=init_method,

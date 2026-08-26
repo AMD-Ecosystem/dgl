@@ -83,3 +83,34 @@ cd ${DEPS_DIR}
 # Right now we need to patch the rocPRIM headers to fix the build because these
 # config headers are missing gfx942 (I've added them manually)
 run cp ${FILE_SOURCE_DIR}/*.hpp ${INSTALL_PREFIX}/include/rocprim/device/detail/config/.
+
+# hipCollections installs cuco headers that still need local fixes on recent ROCm
+# stacks (rocThrust 5.0, libhipcxx SFINAE). Patch files live under script/patches/.
+apply_cuco_patches() {
+  local patch_dir="${FILE_SOURCE_DIR}/patches"
+  if [[ ! -d "${patch_dir}" ]]; then
+    return 0
+  fi
+
+  shopt -s nullglob
+  local patches=("${patch_dir}"/*.patch)
+  shopt -u nullglob
+  if [[ ${#patches[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  for patch_file in "${patches[@]}"; do
+    echo "Applying ${patch_file} to cuco headers under ${INSTALL_PREFIX}/include"
+    if $DRY_RUN; then
+      echo "[dry-run] patch -p1 -d ${INSTALL_PREFIX} < ${patch_file}"
+      continue
+    fi
+
+    if ! sed -n '/^--- /,$p' "${patch_file}" | patch -p1 -d "${INSTALL_PREFIX}" --forward --batch; then
+      echo "Failed to apply ${patch_file}" >&2
+      exit 1
+    fi
+  done
+}
+
+apply_cuco_patches

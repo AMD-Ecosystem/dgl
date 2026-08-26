@@ -26,17 +26,21 @@
 // checks if this is defined rather than checking the value.
 #undef CUDART_VERSION
 
+#include <ATen/hip/HIPContext.h>
 #include <ATen/hip/HIPEvent.h>
 #include <ATen/hip/impl/HIPCachingAllocatorMasqueradingAsCUDA.h>
 #include <ATen/hip/impl/HIPStreamMasqueradingAsCUDA.h>
 #include <c10/hip/HIPException.h>
-#include <dgl/hip/cuda_to_hip.h>
 #include <hip/hip_runtime.h>
+#include <dgl/hip/cuda_to_hip.h>
 
 using namespace c10::hip;
 using GPUStream_t = at::hip::HIPStreamMasqueradingAsCUDA;
 #define THRUST_BACKEND thrust::hip
 #define GET_CURRENT_GPU_STREAM getCurrentHIPStreamMasqueradingAsCUDA
+#define GRAPHBOLT_CACHING_ALLOCATOR c10::hip::HIPCachingAllocator
+#define GRAPHBOLT_C10_CHECK C10_HIP_CHECK
+#define GRAPHBOLT_C10_KERNEL_LAUNCH_CHECK C10_HIP_KERNEL_LAUNCH_CHECK
 
 #else // we're using CUDA
 
@@ -50,6 +54,9 @@ using namespace c10::cuda;
 using GPUStream_t = at::cuda::CUDAStream;
 #define THRUST_BACKEND thrust::cuda
 #define GET_CURRENT_GPU_STREAM getCurrentCUDAStream
+#define GRAPHBOLT_CACHING_ALLOCATOR c10::cuda::CUDACachingAllocator
+#define GRAPHBOLT_C10_CHECK C10_CUDA_CHECK
+#define GRAPHBOLT_C10_KERNEL_LAUNCH_CHECK C10_CUDA_KERNEL_LAUNCH_CHECK
 
 #endif // DGL_USE_HIP
 
@@ -97,13 +104,13 @@ struct CUDAWorkspaceAllocator {
   CUDAWorkspaceAllocator& operator=(const CUDAWorkspaceAllocator&) = default;
 
   void operator()(void* ptr) const {
-   CUDACachingAllocator::raw_delete(ptr);
+   GRAPHBOLT_CACHING_ALLOCATOR::raw_delete(ptr);
   }
 
   // Required by thrust to satisfy allocator requirements.
   value_type* allocate(std::ptrdiff_t size) const {
     return reinterpret_cast<value_type*>(
-       CUDACachingAllocator::raw_alloc(size * sizeof(value_type)));
+       GRAPHBOLT_CACHING_ALLOCATOR::raw_alloc(size * sizeof(value_type)));
   }
 
   // Required by thrust to satisfy allocator requirements.
@@ -114,7 +121,7 @@ struct CUDAWorkspaceAllocator {
       std::size_t size) const {
     return std::unique_ptr<T, CUDAWorkspaceAllocator>(
         reinterpret_cast<T*>(
-           CUDACachingAllocator::raw_alloc(sizeof(T) * size)),
+           GRAPHBOLT_CACHING_ALLOCATOR::raw_alloc(sizeof(T) * size)),
         *this);
   }
 };
@@ -142,7 +149,7 @@ inline bool is_zero<dim3>(dim3 size) {
     }                                                      \
   } while (0)
 
-#define CUDA_CALL(func) C10_CUDA_CHECK((func))
+#define CUDA_CALL(func) GRAPHBOLT_C10_CHECK((func))
 
 #define CUDA_KERNEL_CALL(kernel, nblks, nthrs, shmem, ...)          \
   {                                                                 \
@@ -150,7 +157,7 @@ inline bool is_zero<dim3>(dim3 size) {
         !graphbolt::cuda::is_zero((nthrs))) {                       \
       auto stream = graphbolt::cuda::GetCurrentStream();            \
       (kernel)<<<(nblks), (nthrs), (shmem), stream>>>(__VA_ARGS__); \
-      C10_CUDA_KERNEL_LAUNCH_CHECK();                               \
+      GRAPHBOLT_C10_KERNEL_LAUNCH_CHECK();                          \
     }                                                               \
   }
 

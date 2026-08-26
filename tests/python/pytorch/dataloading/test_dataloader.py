@@ -12,7 +12,7 @@ import pytest
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from utils import parametrize_idtype
+from utils import parametrize_idtype, rendezvous_port
 
 
 @pytest.mark.parametrize("batch_size", [None, 16])
@@ -109,7 +109,7 @@ def test_neighbor_nonuniform(idtype, mode, use_ddp, use_mask):
             pytest.skip("PyTorch 1.13.0+ has problems in Windows DDP...")
         dist.init_process_group(
             "gloo" if F.ctx() == F.cpu() else "nccl",
-            "tcp://127.0.0.1:12347",
+            f"tcp://127.0.0.1:{rendezvous_port(2)}",
             world_size=1,
             rank=0,
         )
@@ -273,7 +273,7 @@ def _ddp_runner(proc_id, nprocs, g, data, args):
 
     dist.init_process_group(
         "nccl" if mode != "cpu" else "gloo",
-        "tcp://127.0.0.1:12347",
+        f"tcp://127.0.0.1:{rendezvous_port(2)}",
         world_size=nprocs,
         rank=proc_id,
     )
@@ -338,7 +338,7 @@ def test_node_dataloader(
             pytest.skip("PyTorch 1.13.0+ has problems in Windows DDP...")
         dist.init_process_group(
             "gloo" if F.ctx() == F.cpu() else "nccl",
-            "tcp://127.0.0.1:12347",
+            f"tcp://127.0.0.1:{rendezvous_port(2)}",
             world_size=1,
             rank=0,
         )
@@ -476,7 +476,7 @@ def test_edge_dataloader(idtype, sampler_name, neg_sampler, mode, use_ddp):
             pytest.skip("PyTorch 1.13.0+ has problems in Windows DDP...")
         dist.init_process_group(
             "gloo" if F.ctx() == F.cpu() else "nccl",
-            "tcp://127.0.0.1:12347",
+            f"tcp://127.0.0.1:{rendezvous_port(2)}",
             world_size=1,
             rank=0,
         )

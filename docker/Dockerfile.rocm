@@ -1,6 +1,3 @@
-# Deprecated: use docker/Dockerfile.rocm instead.
-# This filename is kept for older build scripts.
-#
 # "Copyright Advanced Micro Devices, Inc.
 # Licensed under the Apache License Version 2.0"
 

@@ -19,14 +19,16 @@
  */
 #include <graphbolt/cuda_ops.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/transform.h>
 
 #include <cstddef>
 #ifdef GRAPHBOLT_USE_HIP
 #include <hipcub/hipcub.hpp>
-#define C10_CUDA_KERNEL_LAUNCH_CHECK C10_HIP_KERNEL_LAUNCH_CHECK
+#define GRAPHBOLT_DISCARD_OUTPUT_ITERATOR thrust::discard_iterator<>{}
 #else
 #include <cub/cub.cuh>
+#define GRAPHBOLT_DISCARD_OUTPUT_ITERATOR cub::DiscardOutputIterator{}
 #endif
 #include <cuco/static_map.cuh>
 #include <cuda/std/atomic>
@@ -147,7 +149,7 @@ GpuGraphCache::GpuGraphCache(
             ::cuda::stream_ref{cuda::GetCurrentStream()}};
         map_ = new map_t<index_t>{std::move(map_temp)};
       }));
-  C10_CUDA_KERNEL_LAUNCH_CHECK();  // Check the map constructor's success.
+  GRAPHBOLT_C10_KERNEL_LAUNCH_CHECK();  // Check the map constructor's success.
   const auto options = torch::TensorOptions().device(c10::DeviceType::CUDA);
   TORCH_CHECK(threshold > 0, "Threshold should be a position integer.");
   threshold_ = threshold;
@@ -235,7 +237,7 @@ std::tuple<torch::Tensor, torch::Tensor, int64_t, int64_t> GpuGraphCache::Query(
             output_indices.data_ptr<index_t>());
         CUB_CALL(
             DevicePartition::If, position_and_index, output_position_and_index,
-            cub::DiscardOutputIterator{}, seeds.size(0),
+            GRAPHBOLT_DISCARD_OUTPUT_ITERATOR, seeds.size(0),
             [] __device__(thrust::tuple<index_t, index_t> & x) {
               return thrust::get<0>(x) >= 0;
             });
@@ -407,7 +409,8 @@ std::tuple<torch::Tensor, std::vector<torch::Tensor>> GpuGraphCache::Replace(
                 CUB_CALL(
                     DeviceSelect::Flagged, iota, is_threshold,
                     output_indices.data_ptr<indices_t>(),
-                    cub::DiscardOutputIterator{}, missing_positions.size(0));
+                    GRAPHBOLT_DISCARD_OUTPUT_ITERATOR,
+                    missing_positions.size(0));
                 auto [in_degree, sliced_indptr] =
                     ops::SliceCSCIndptr(indptr, output_indices);
                 while (num_nodes_ + num_threshold >= indptr_.size(0)) {
