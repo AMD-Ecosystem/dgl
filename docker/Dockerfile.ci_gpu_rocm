@@ -34,7 +34,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 # keep working unmodified. No-op on older base images that already ship a real
 # /opt/rocm (e.g. rocm7.0.2) and have no rocm-sdk CLI.
 RUN if command -v rocm-sdk >/dev/null 2>&1 && [ ! -e /opt/rocm ]; then \
-      ROCM_SDK_VER="$(python -c 'import importlib.metadata as m; print(m.version("rocm"))')" && \
+      ROCM_SDK_VER="$(python3 -c 'import importlib.metadata as m; print(m.version("rocm"))')" && \
       pip install --index-url https://stable.repo.amd.com/rocm/whl-next/ "rocm[devel]==${ROCM_SDK_VER}" && \
       rocm-sdk init && \
       ln -sfn "$(rocm-sdk path --root)" /opt/rocm ; \
@@ -68,11 +68,11 @@ WORKDIR ${DGL_SRC_DIR}/python
 # just at runtime) because setup.py's config_cython() only builds the
 # dgl._ffi._cy3.core extension when Cython is importable at `pip install`
 # time; otherwise it silently falls back to the ctypes-only FFI path.
-RUN python -m pip install build wheel cython
+RUN python3 -m pip install build wheel cython
 # Install an editable version of the package so we can make source changes and test them
-RUN python -m pip install -e .
+RUN python3 -m pip install -e .
 # Build the wheel file for packaging (won't update automatically with source changes)
-RUN python -m build --wheel
+RUN python3 -m build --wheel
 
 
 # Store the artifacts
