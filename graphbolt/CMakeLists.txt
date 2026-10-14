@@ -118,6 +118,32 @@ endif()
 # The core graphbolt library.
 add_library(${LIB_GRAPHBOLT_NAME} SHARED ${BOLT_SRC} ${BOLT_HEADERS})
 
+# Build with hidden symbol visibility by default. Without this, GCC/Clang
+# export every symbol (including inlined template instantiations) from
+# vendored header-only dependencies -- notably Taskflow (see
+# BUILD_WITH_TASKFLOW below) -- into this shared library's *dynamic* symbol
+# table. If some other shared library loaded into the same process also
+# statically links an (ABI-incompatible) copy of the same header-only
+# library with default-visibility weak symbols -- e.g. ROCm 10.1's
+# libhipfile.so.0 bundles its own Taskflow build -- the dynamic linker's
+# global symbol interposition can silently bind this library's internal
+# calls (e.g. tf::Executor::_wait_for_task) to the *other* library's
+# differently-laid-out implementation instead of its own, corrupting memory
+# and segfaulting deep inside the mismatched call. PyTorch's TorchScript
+# custom-op registration (TORCH_LIBRARY/m.def/m.class_ in python_binding.cc)
+# runs via static initializers at load time and does not require any symbol
+# to be externally visible, so hiding everything here is safe.
+set_target_properties(${LIB_GRAPHBOLT_NAME} PROPERTIES
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN ON)
+# Belt-and-suspenders: some of the sources above are explicitly marked
+# LANGUAGE HIP further down (see set_source_files_properties(${BOLT_SRC} ...)
+# in the USE_HIP branch), and CMake's CXX_VISIBILITY_PRESET target property
+# isn't guaranteed to apply to files compiled as the HIP language. hipcc/clang
+# accept the same -fvisibility flags as GCC/Clang, so pass them directly too.
+target_compile_options(${LIB_GRAPHBOLT_NAME} PRIVATE
+  $<$<COMPILE_LANGUAGE:CXX,HIP,CUDA>:-fvisibility=hidden -fvisibility-inlines-hidden>)
+
 # Setup includes
 
 include_directories(BEFORE ${BOLT_DIR}
@@ -190,6 +216,15 @@ if(USE_CUDA OR USE_HIP)
   # compile the cuda/extension folder with Volta+ CUDA architectures.
   add_library(${LIB_GRAPHBOLT_CUDA_NAME} STATIC ${BOLT_CUDA_EXTENSION_SRC} ${BOLT_HEADERS})
   target_link_libraries(${LIB_GRAPHBOLT_CUDA_NAME} "${TORCH_LIBRARIES}")
+  # Same hidden-visibility rationale as ${LIB_GRAPHBOLT_NAME} above: these
+  # object files get statically linked into the final shared library, so
+  # their own default-visibility symbols would otherwise still end up
+  # exported from it.
+  set_target_properties(${LIB_GRAPHBOLT_CUDA_NAME} PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON)
+  target_compile_options(${LIB_GRAPHBOLT_CUDA_NAME} PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX,HIP,CUDA>:-fvisibility=hidden -fvisibility-inlines-hidden>)
 
   # General target properties
   set_target_properties(${LIB_GRAPHBOLT_NAME} PROPERTIES CUDA_STANDARD 17)
